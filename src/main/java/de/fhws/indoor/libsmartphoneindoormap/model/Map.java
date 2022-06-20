@@ -104,6 +104,25 @@ public class Map {
         });
     }
 
+
+    public void setSeenFtm(String macStr) { setSeenFtm(macStr, true); }
+
+    public void setSeenFtm(String macStr, boolean save) {
+        MacAddress mac = new MacAddress(macStr);
+        Optional<AccessPoint> ap = floors.values().stream()
+                .flatMap(floor -> floor.getAccessPoints().values().stream())
+                .filter(a -> a.mac.equals(mac)).findFirst();
+        ap.ifPresent(a -> {
+            if (!a.ftmSeen) {
+                a.ftmSeen = true;
+                if (serializer != null && save) {
+                    serializer.saveSeenStateFtm(macStr);
+                }
+                raiseChangedListeners();
+            }
+        });
+    }
+
     private void raiseChangedListeners() {
         changedListeners.forEach(ChangedListener::onChange);
     }

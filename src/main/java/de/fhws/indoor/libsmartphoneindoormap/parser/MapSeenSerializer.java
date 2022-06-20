@@ -21,6 +21,7 @@ public class MapSeenSerializer {
     private static final String TYPE_BEACON = "Beacon";
     private static final String TYPE_UWB = "UWB";
     private static final String TYPE_WIFI = "WiFi";
+    private static final String TYPE_FTM = "FTM";
 
     private static final String SEPARATOR = " ";
 
@@ -46,6 +47,8 @@ public class MapSeenSerializer {
     public void saveSeenStateWiFi(String identifier) {
         saveSeenState(TYPE_WIFI, identifier);
     }
+
+    public void saveSeenStateFtm(String identifier) { saveSeenState(TYPE_FTM, identifier); }
 
     public void clearSeenStates() {
         File toDelete = new File(safeFileUri.getPath());
@@ -91,6 +94,10 @@ public class MapSeenSerializer {
 
             case TYPE_WIFI:
                 map.setSeenWiFi(identifier, false);
+                break;
+
+            case TYPE_FTM:
+                map.setSeenFtm(identifier, false);
                 break;
 
             default:

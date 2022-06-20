@@ -47,12 +47,26 @@ public class MapView extends View {
 
     private Map map = null;
     private Floor floor = null;
+    private ViewConfig viewConfig = new ViewConfig();
+
+
+    public static class ViewConfig {
+        public boolean showWiFi = true;
+        public boolean showBluetooth = true;
+        public boolean showUWB = true;
+    }
+
 
     public MapView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mTwoFingerGestureDetector = new TwoFingerGestureDetector();
 
         mModelMatrix.setScale(10, 10);
+    }
+
+    public void setViewConfig(ViewConfig viewConfig) {
+        this.viewConfig = viewConfig;
+        invalidate();
     }
 
     public void setColorScheme(ColorScheme colorScheme) {
@@ -104,9 +118,15 @@ public class MapView extends View {
             if (map == null || floor == null) { return; }
 
             floor.getWalls().forEach(wall -> drawWall(wall, canvas));
-            floor.getBeacons().values().forEach(beacon -> drawBeacon(beacon, canvas));
-            floor.getUwbAnchors().values().forEach(uwbAnchor -> drawUWB(uwbAnchor, canvas));
-            floor.getAccessPoints().values().forEach(accessPoint -> drawAP(accessPoint, canvas));
+            if(viewConfig.showBluetooth) {
+                floor.getBeacons().values().forEach(beacon -> drawBeacon(beacon, canvas));
+            }
+            if(viewConfig.showUWB) {
+                floor.getUwbAnchors().values().forEach(uwbAnchor -> drawUWB(uwbAnchor, canvas));
+            }
+            if(viewConfig.showWiFi) {
+                floor.getAccessPoints().values().forEach(accessPoint -> drawAP(accessPoint, canvas));
+            }
         }
     }
 
@@ -192,6 +212,10 @@ public class MapView extends View {
     private void drawAP(AccessPoint accessPoint, Canvas canvas) {
         canvas.drawCircle(accessPoint.position.x, accessPoint.position.y, 0.15f,
                 accessPoint.seen ? seenPaint : unseenPaint);
+        if(accessPoint.hasFtm) {
+            canvas.drawCircle(accessPoint.position.x, accessPoint.position.y, 0.075f,
+                    accessPoint.ftmSeen ? seenPaint : unseenPaint);
+        }
 
         // flip y axis to draw text
         if (!accessPoint.seen) {

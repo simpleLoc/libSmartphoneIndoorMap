@@ -3,6 +3,7 @@ package de.fhws.indoor.libsmartphoneindoormap.parser;
 import android.app.AlertDialog;
 import android.content.Context;
 
+import org.w3c.dom.Attr;
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
@@ -141,6 +142,7 @@ public class XMLMapParser {
                         currentAP = new AccessPoint();
                         currentAP.name = attributes.getValue("name");
                         currentAP.mac = new MacAddress(attributes.getValue("mac"));
+                        currentAP.hasFtm = parseBoolean(attributes, "hasFtm", false);
                         currentAP.position = parsePosition(attributes);
                         currentAP.mdl = parseRadioModel(attributes);
                         break;
@@ -241,6 +243,12 @@ public class XMLMapParser {
             } catch (NumberFormatException e) {
                 return Float.NaN;
             }
+        }
+
+        public boolean parseBoolean(Attributes attributes, final String name, final boolean defaultValue) {
+            String value = attributes.getValue(name);
+            if(value == null) { return defaultValue; }
+            return Boolean.parseBoolean(value);
         }
 
         public Vec3 parsePosition(Attributes attributes) {
