@@ -19,6 +19,7 @@ import javax.xml.parsers.SAXParserFactory;
 
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
+import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.MacAddress;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
@@ -76,6 +77,7 @@ public class XMLMapParser {
         private AccessPoint currentAP = null;
         private UWBAnchor currentUWB = null;
         private Beacon currentBeacon = null;
+        private Fingerprint currentFingerprint = null;
 
         public Map getResult() {
             return map;
@@ -172,6 +174,16 @@ public class XMLMapParser {
                         currentBeacon.mdl = parseRadioModel(attributes);
                         break;
 
+                    case "location":
+                        assert currentFingerprint == null;
+                        currentFingerprint = new Fingerprint();
+                        currentFingerprint.name = attributes.getValue("name");
+                        currentFingerprint.position = new Vec3();
+                        currentFingerprint.position.x = parseFloat(attributes, "x");
+                        currentFingerprint.position.y = parseFloat(attributes, "y");
+                        currentFingerprint.position.z = currentFloor.getAtHeight() + parseFloat(attributes, "dz");
+                        break;
+
                     default:
                         break;
                 }
@@ -221,6 +233,13 @@ public class XMLMapParser {
                     assert currentBeacon != null;
                     currentFloor.addBeacon(currentBeacon);
                     currentBeacon = null;
+                    break;
+
+                case "location":
+                    assert currentFloor != null;
+                    assert currentFingerprint != null;
+                    currentFloor.addFingerprint(currentFingerprint);
+                    currentFingerprint = null;
                     break;
 
                 default:

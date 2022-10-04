@@ -12,10 +12,12 @@ import android.view.View;
 
 import androidx.annotation.RequiresApi;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
+import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
 import de.fhws.indoor.libsmartphoneindoormap.model.UWBAnchor;
@@ -49,11 +51,17 @@ public class MapView extends View {
     private Floor floor = null;
     private ViewConfig viewConfig = new ViewConfig();
 
+    private static final long mLongPressDuration = 2000;   // in ms
+    private static final float mMaxPressMoveDistance = 10; // in pixel
+    private Vec2 mTouchDownScreenPos = new Vec2();
+    private ArrayList<IMapEventListener> eventListeners = new ArrayList<>();
+
 
     public static class ViewConfig {
         public boolean showWiFi = true;
         public boolean showBluetooth = true;
         public boolean showUWB = true;
+        public boolean showFingerprint = true;
     }
 
 
@@ -62,6 +70,14 @@ public class MapView extends View {
         mTwoFingerGestureDetector = new TwoFingerGestureDetector();
 
         mModelMatrix.setScale(10, 10);
+    }
+
+    public void addEventListener(IMapEventListener listener) {
+        eventListeners.add(listener);
+    }
+
+    public void removeEventListener(IMapEventListener listener) {
+        eventListeners.remove(listener);
     }
 
     public void setViewConfig(ViewConfig viewConfig) {
@@ -126,6 +142,10 @@ public class MapView extends View {
             }
             if(viewConfig.showWiFi) {
                 floor.getAccessPoints().values().forEach(accessPoint -> drawAP(accessPoint, canvas));
+            }
+
+            if(viewConfig.showFingerprint) {
+                floor.getFingerprints().values().forEach(fingerprint -> drawFP(fingerprint, canvas));
             }
         }
     }
@@ -228,6 +248,39 @@ public class MapView extends View {
         }
     }
 
+    private void drawFP(Fingerprint fingerprint, Canvas canvas) {
+        Paint curPaint = fingerprint.recorded ? seenPaint : unseenPaint;
+        Paint.Style prevStyle = curPaint.getStyle();
+
+        canvas.drawCircle(fingerprint.position.x, fingerprint.position.y, 0.10f, curPaint);
+        curPaint.setStyle(Paint.Style.STROKE);
+        canvas.drawCircle(fingerprint.position.x, fingerprint.position.y, 0.17f, curPaint);
+
+        // reset paint style
+        curPaint.setStyle(prevStyle);
+
+        // flip y axis to draw text
+        canvas.scale(1/textScale, -1/textScale);
+        canvas.drawText(fingerprint.name,
+                fingerprint.position.x * textScale - curPaint.measureText(fingerprint.name),
+                (-fingerprint.position.y - 0.15f) * textScale,
+                curPaint);
+        canvas.scale(textScale, -textScale);
+
+    }
+
+    private void raiseOnTap(float[] mapPosition) {
+        for (IMapEventListener listener : eventListeners) {
+            listener.onTap(mapPosition);
+        }
+    }
+
+    private void raiseOnLongPress(float[] mapPosition) {
+        for (IMapEventListener listener : eventListeners) {
+            listener.onLongPress(mapPosition);
+        }
+    }
+
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
         if(mTwoFingerGestureDetector.onTouchEvent(ev)) { return true; } // rotation scale detector consumed event
@@ -243,6 +296,7 @@ public class MapView extends View {
 
                 mLastTouchX = vec[0];
                 mLastTouchY = vec[1];
+                mTouchDownScreenPos = new Vec2(x, y);
 
                 // Save the ID of this pointer
                 mActivePointerId = ev.getPointerId(0);
@@ -287,11 +341,22 @@ public class MapView extends View {
                     // This was our active pointer going up. Choose a new
                     // active pointer and adjust accordingly.
                     final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
-                    float[] vec = {ev.getX(newPointerIndex), ev.getY(newPointerIndex)};
+                    final float x = ev.getX(newPointerIndex);
+                    final float y = ev.getY(newPointerIndex);
+                    float[] vec = {x, y};
                     mMVMatrixInverse.mapPoints(vec);
                     mLastTouchX = vec[0];
                     mLastTouchY = vec[1];
                     mActivePointerId = ev.getPointerId(newPointerIndex);
+
+                    float pointerMoveDist = (float)(new Vec2(x, y).sub(mTouchDownScreenPos)).length();
+                    if (pointerMoveDist < mMaxPressMoveDistance) {
+                        if (ev.getEventTime() - ev.getDownTime() < mLongPressDuration) {
+                            raiseOnTap(vec);
+                        } else {
+                            raiseOnLongPress(vec);
+                        }
+                    }
                 } else {
                     float[] vec = {ev.getX(mActivePointerId), ev.getY(mActivePointerId)};
                     mMVMatrixInverse.mapPoints(vec);
