@@ -30,6 +30,7 @@ public class MapView extends View {
     private Paint wallPaint;
     private Paint unseenPaint;
     private Paint seenPaint;
+    private Paint selectedPaint;
 
     // this is required to draw small texts with text sizes around 1dp
     private final float textScale = 16.f;
@@ -72,6 +73,19 @@ public class MapView extends View {
         mModelMatrix.setScale(10, 10);
     }
 
+    public Fingerprint findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
+        Fingerprint nearest = null;
+        float distance = maxSearchRadius;
+        for (Fingerprint fingerprint : floor.getFingerprints().values()) {
+            float d = (float) new Vec2(fingerprint.position.x, fingerprint.position.y).sub(mapPosition).length();
+            if (d < distance) {
+                distance = d;
+                nearest = fingerprint;
+            }
+        }
+        return nearest;
+    }
+
     public void addEventListener(IMapEventListener listener) {
         eventListeners.add(listener);
     }
@@ -96,6 +110,11 @@ public class MapView extends View {
         seenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         seenPaint.setColor(getResources().getColor(colorScheme.seenColor, getContext().getTheme()));
         seenPaint.setTextSize(16);
+
+        selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        selectedPaint.setColor(getResources().getColor(colorScheme.selectedColor, getContext().getTheme()));
+        selectedPaint.setTextSize(16);
+
         initialized = true;
         invalidate();
     }
@@ -250,6 +269,7 @@ public class MapView extends View {
 
     private void drawFP(Fingerprint fingerprint, Canvas canvas) {
         Paint curPaint = fingerprint.recorded ? seenPaint : unseenPaint;
+        curPaint = fingerprint.selected ? selectedPaint : curPaint;
         Paint.Style prevStyle = curPaint.getStyle();
 
         canvas.drawCircle(fingerprint.position.x, fingerprint.position.y, 0.10f, curPaint);
@@ -269,13 +289,13 @@ public class MapView extends View {
 
     }
 
-    private void raiseOnTap(float[] mapPosition) {
+    private void raiseOnTap(Vec2 mapPosition) {
         for (IMapEventListener listener : eventListeners) {
             listener.onTap(mapPosition);
         }
     }
 
-    private void raiseOnLongPress(float[] mapPosition) {
+    private void raiseOnLongPress(Vec2 mapPosition) {
         for (IMapEventListener listener : eventListeners) {
             listener.onLongPress(mapPosition);
         }
@@ -329,6 +349,20 @@ public class MapView extends View {
 
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL: {
+                final int pointerIndex = ev.findPointerIndex(mActivePointerId);
+                final float x = ev.getX(pointerIndex);
+                final float y = ev.getY(pointerIndex);
+                float[] vec = {x, y};
+                mMVMatrixInverse.mapPoints(vec);
+                float pointerMoveDist = (float)(new Vec2(x, y).sub(mTouchDownScreenPos)).length();
+                if (pointerMoveDist < mMaxPressMoveDistance) {
+                    if (ev.getEventTime() - ev.getDownTime() < mLongPressDuration) {
+                        raiseOnTap(new Vec2(vec[0], vec[1]));
+                    } else {
+                        raiseOnLongPress(new Vec2(vec[0], vec[1]));
+                    }
+                }
+
                 mActivePointerId = INVALID_POINTER_ID;
                 break;
             }
@@ -348,17 +382,10 @@ public class MapView extends View {
                     mLastTouchX = vec[0];
                     mLastTouchY = vec[1];
                     mActivePointerId = ev.getPointerId(newPointerIndex);
-
-                    float pointerMoveDist = (float)(new Vec2(x, y).sub(mTouchDownScreenPos)).length();
-                    if (pointerMoveDist < mMaxPressMoveDistance) {
-                        if (ev.getEventTime() - ev.getDownTime() < mLongPressDuration) {
-                            raiseOnTap(vec);
-                        } else {
-                            raiseOnLongPress(vec);
-                        }
-                    }
                 } else {
-                    float[] vec = {ev.getX(mActivePointerId), ev.getY(mActivePointerId)};
+                    final float x = ev.getX(mActivePointerId);
+                    final float y = ev.getY(mActivePointerId);
+                    float[] vec = {x, y};
                     mMVMatrixInverse.mapPoints(vec);
                     mLastTouchX = vec[0];
                     mLastTouchY = vec[1];

@@ -6,10 +6,12 @@ public class ColorScheme {
     int wallColor;
     int unseenColor;
     int seenColor;
+    int selectedColor;
 
-    public ColorScheme(int wallColor, int unseenColor, int seenColor) {
+    public ColorScheme(int wallColor, int unseenColor, int seenColor, int selectedColor) {
         this.wallColor = wallColor;
         this.unseenColor = unseenColor;
         this.seenColor = seenColor;
+        this.selectedColor = selectedColor;
     }
 }
