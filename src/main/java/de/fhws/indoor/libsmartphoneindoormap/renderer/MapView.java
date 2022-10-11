@@ -88,8 +88,19 @@ public class MapView extends View {
                 }
             } else if (fingerprint instanceof FingerprintPath) {
                 FingerprintPath fpPath = (FingerprintPath) fingerprint;
-                for (int i = 0; i < fpPath.fingerprintNames.size(); ++i) {
-
+                FingerprintPosition last = null;
+                for (String fpName : fpPath.fingerprintNames) {
+                    FingerprintPosition fp = (FingerprintPosition) floor.getFingerprints().get(fpName);
+                    if (last != null && fp != null) {
+                        Vec2 lineCenter = new Vec2(last.position.x, last.position.y).add(new Vec2(fp.position.x, fp.position.y)).mul(0.5f);
+                        float d = (float) lineCenter.sub(mapPosition).length();
+                        if (d < distance) {
+                            distance = d;
+                            nearest = fingerprint;
+                            break;
+                        }
+                    }
+                    last = fp;
                 }
             }
         }
@@ -280,6 +291,8 @@ public class MapView extends View {
     private void drawFP(Fingerprint fingerprint, Canvas canvas) {
         if (fingerprint instanceof FingerprintPosition) {
             drawFPPosition((FingerprintPosition) fingerprint, canvas);
+        } else if (fingerprint instanceof FingerprintPath) {
+            drawFPPath((FingerprintPath) fingerprint, canvas);
         }
     }
 
@@ -300,6 +313,42 @@ public class MapView extends View {
         canvas.drawText(fingerprint.name,
                 fingerprint.position.x * textScale - curPaint.measureText(fingerprint.name),
                 (-fingerprint.position.y - 0.15f) * textScale,
+                curPaint);
+        canvas.scale(textScale, -textScale);
+    }
+
+    private void drawFPPath(FingerprintPath fingerprint, Canvas canvas) {
+        Paint curPaint = fingerprint.recorded ? seenPaint : unseenPaint;
+        curPaint = fingerprint.selected ? selectedPaint : curPaint;
+        float prevStrokeWidth = curPaint.getStrokeWidth();
+
+        curPaint.setStrokeWidth(0.1f);
+
+        Vec2 center = new Vec2();
+        int cnt = 0;
+        FingerprintPosition last = null;
+        for (String fpName : fingerprint.fingerprintNames) {
+            FingerprintPosition fp = (FingerprintPosition) floor.getFingerprints().get(fpName);
+            if (fp != null) {
+                center = center.add(new Vec2(fp.position.x, fp.position.y));
+                cnt++;
+                if (last != null) {
+                    canvas.drawLine(last.position.x, last.position.y, fp.position.x, fp.position.y, curPaint);
+                }
+            }
+            last = fp;
+        }
+
+        center = center.mul(1.0f / cnt);
+
+        // reset paint style
+        curPaint.setStrokeWidth(prevStrokeWidth);
+
+        // flip y axis to draw text
+        canvas.scale(1/textScale, -1/textScale);
+        canvas.drawText(fingerprint.name,
+                center.x * textScale - curPaint.measureText(fingerprint.name) / 2,
+                (-center.y - 0.15f) * textScale,
                 curPaint);
         canvas.scale(textScale, -textScale);
     }
