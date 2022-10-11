@@ -18,6 +18,7 @@ import java.util.Optional;
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
 import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
+import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPosition;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
 import de.fhws.indoor.libsmartphoneindoormap.model.UWBAnchor;
@@ -73,10 +74,10 @@ public class MapView extends View {
         mModelMatrix.setScale(10, 10);
     }
 
-    public Fingerprint findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
-        Fingerprint nearest = null;
+    public FingerprintPosition findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
+        FingerprintPosition nearest = null;
         float distance = maxSearchRadius;
-        for (Fingerprint fingerprint : floor.getFingerprints().values()) {
+        for (FingerprintPosition fingerprint : floor.getFingerprints().values()) {
             float d = (float) new Vec2(fingerprint.position.x, fingerprint.position.y).sub(mapPosition).length();
             if (d < distance) {
                 distance = d;
@@ -267,7 +268,7 @@ public class MapView extends View {
         }
     }
 
-    private void drawFP(Fingerprint fingerprint, Canvas canvas) {
+    private void drawFP(FingerprintPosition fingerprint, Canvas canvas) {
         Paint curPaint = fingerprint.recorded ? seenPaint : unseenPaint;
         curPaint = fingerprint.selected ? selectedPaint : curPaint;
         Paint.Style prevStyle = curPaint.getStyle();

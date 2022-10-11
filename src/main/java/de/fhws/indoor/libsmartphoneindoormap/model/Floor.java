@@ -12,7 +12,7 @@ public class Floor {
     private final HashMap<MacAddress, AccessPoint> accessPoints = new HashMap<>();
     private final HashMap<String, UWBAnchor> uwbAnchors = new HashMap<>();
     private final HashMap<MacAddress, Beacon> beacons = new HashMap<>();
-    private final HashMap<String, Fingerprint> fingerprints = new HashMap<>();
+    private final HashMap<String, FingerprintPosition> fingerprints = new HashMap<>();
 
     public float getAtHeight() {
         return atHeight;
@@ -70,11 +70,11 @@ public class Floor {
         beacons.put(b.mac, b);
     }
 
-    public HashMap<String, Fingerprint> getFingerprints() {
+    public HashMap<String, FingerprintPosition> getFingerprints() {
         return fingerprints;
     }
 
-    public void addFingerprint(Fingerprint fingerprint) {
+    public void addFingerprint(FingerprintPosition fingerprint) {
         fingerprints.put(fingerprint.name, fingerprint);
     }
 

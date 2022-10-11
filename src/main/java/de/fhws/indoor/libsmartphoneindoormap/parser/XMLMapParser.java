@@ -3,7 +3,6 @@ package de.fhws.indoor.libsmartphoneindoormap.parser;
 import android.app.AlertDialog;
 import android.content.Context;
 
-import org.w3c.dom.Attr;
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
@@ -20,6 +19,7 @@ import javax.xml.parsers.SAXParserFactory;
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
 import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
+import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPosition;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.MacAddress;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
@@ -77,7 +77,7 @@ public class XMLMapParser {
         private AccessPoint currentAP = null;
         private UWBAnchor currentUWB = null;
         private Beacon currentBeacon = null;
-        private Fingerprint currentFingerprint = null;
+        private FingerprintPosition currentFingerprintPosition = null;
 
         public Map getResult() {
             return map;
@@ -175,13 +175,13 @@ public class XMLMapParser {
                         break;
 
                     case "location":
-                        assert currentFingerprint == null;
-                        currentFingerprint = new Fingerprint();
-                        currentFingerprint.name = attributes.getValue("name");
-                        currentFingerprint.position = new Vec3();
-                        currentFingerprint.position.x = parseFloat(attributes, "x");
-                        currentFingerprint.position.y = parseFloat(attributes, "y");
-                        currentFingerprint.position.z = currentFloor.getAtHeight() + parseFloat(attributes, "dz");
+                        assert currentFingerprintPosition == null;
+                        currentFingerprintPosition = new FingerprintPosition();
+                        currentFingerprintPosition.name = attributes.getValue("name");
+                        currentFingerprintPosition.position = new Vec3();
+                        currentFingerprintPosition.position.x = parseFloat(attributes, "x");
+                        currentFingerprintPosition.position.y = parseFloat(attributes, "y");
+                        currentFingerprintPosition.position.z = currentFloor.getAtHeight() + parseFloat(attributes, "dz");
                         break;
 
                     default:
@@ -237,9 +237,9 @@ public class XMLMapParser {
 
                 case "location":
                     assert currentFloor != null;
-                    assert currentFingerprint != null;
-                    currentFloor.addFingerprint(currentFingerprint);
-                    currentFingerprint = null;
+                    assert currentFingerprintPosition != null;
+                    currentFloor.addFingerprint(currentFingerprintPosition);
+                    currentFingerprintPosition = null;
                     break;
 
                 default:

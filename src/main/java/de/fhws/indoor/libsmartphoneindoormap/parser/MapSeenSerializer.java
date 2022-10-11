@@ -110,7 +110,7 @@ public class MapSeenSerializer {
         try {
             writer = new OutputStreamWriter(new FileOutputStream(safeFileUri.getPath(), true));
         } catch (FileNotFoundException e) {
-            Log.e(TAG, "Could not write to file: " + e);
+            Log.e(TAG, "Cannot write to file: " + e);
             return;
         }
 
