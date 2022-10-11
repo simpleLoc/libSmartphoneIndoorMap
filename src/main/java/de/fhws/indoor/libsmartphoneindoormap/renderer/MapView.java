@@ -130,7 +130,7 @@ public class MapView extends View {
 
         seenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         seenPaint.setColor(getResources().getColor(colorScheme.seenColor, getContext().getTheme()));
-        seenPaint.setTextSize(16);
+        seenPaint.setTextSize(8);
 
         selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         selectedPaint.setColor(getResources().getColor(colorScheme.selectedColor, getContext().getTheme()));
