@@ -18,6 +18,7 @@ import java.util.Optional;
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
 import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
+import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPath;
 import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPosition;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
@@ -74,14 +75,22 @@ public class MapView extends View {
         mModelMatrix.setScale(10, 10);
     }
 
-    public FingerprintPosition findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
-        FingerprintPosition nearest = null;
+    public Fingerprint findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
+        Fingerprint nearest = null;
         float distance = maxSearchRadius;
-        for (FingerprintPosition fingerprint : floor.getFingerprints().values()) {
-            float d = (float) new Vec2(fingerprint.position.x, fingerprint.position.y).sub(mapPosition).length();
-            if (d < distance) {
-                distance = d;
-                nearest = fingerprint;
+        for (Fingerprint fingerprint : floor.getFingerprints().values()) {
+            if (fingerprint instanceof FingerprintPosition) {
+                FingerprintPosition fpPos = (FingerprintPosition) fingerprint;
+                float d = (float) new Vec2(fpPos.position.x, fpPos.position.y).sub(mapPosition).length();
+                if (d < distance) {
+                    distance = d;
+                    nearest = fingerprint;
+                }
+            } else if (fingerprint instanceof FingerprintPath) {
+                FingerprintPath fpPath = (FingerprintPath) fingerprint;
+                for (int i = 0; i < fpPath.fingerprintNames.size(); ++i) {
+
+                }
             }
         }
         return nearest;
@@ -268,7 +277,13 @@ public class MapView extends View {
         }
     }
 
-    private void drawFP(FingerprintPosition fingerprint, Canvas canvas) {
+    private void drawFP(Fingerprint fingerprint, Canvas canvas) {
+        if (fingerprint instanceof FingerprintPosition) {
+            drawFPPosition((FingerprintPosition) fingerprint, canvas);
+        }
+    }
+
+    private void drawFPPosition(FingerprintPosition fingerprint, Canvas canvas) {
         Paint curPaint = fingerprint.recorded ? seenPaint : unseenPaint;
         curPaint = fingerprint.selected ? selectedPaint : curPaint;
         Paint.Style prevStyle = curPaint.getStyle();
@@ -287,7 +302,6 @@ public class MapView extends View {
                 (-fingerprint.position.y - 0.15f) * textScale,
                 curPaint);
         canvas.scale(textScale, -textScale);
-
     }
 
     private void raiseOnTap(Vec2 mapPosition) {
