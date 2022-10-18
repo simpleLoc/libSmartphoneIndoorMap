@@ -76,6 +76,8 @@ public class MapView extends View {
     }
 
     public Fingerprint findNearestFingerprint(Vec2 mapPosition, float maxSearchRadius) {
+        if (floor == null) return null;
+
         Fingerprint nearest = null;
         float distance = maxSearchRadius;
         for (Fingerprint fingerprint : floor.getFingerprints().values()) {
