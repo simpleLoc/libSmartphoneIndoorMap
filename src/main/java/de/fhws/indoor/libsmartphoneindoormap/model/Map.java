@@ -31,6 +31,22 @@ public class Map {
         floors.put(floor.getName(), floor);
     }
 
+    public HashMap<MacAddress, Beacon> getBeacons() {
+        HashMap<MacAddress, Beacon> out = new HashMap<>();
+        for (Floor f : floors.values()) {
+            out.putAll(f.getBeacons());
+        }
+        return out;
+    }
+
+    public HashMap<MacAddress, AccessPoint> getAccessPoints() {
+        HashMap<MacAddress, AccessPoint> out = new HashMap<>();
+        for (Floor f : floors.values()) {
+            out.putAll(f.getAccessPoints());
+        }
+        return out;
+    }
+
     public void resetSeen(boolean value) {
         for (Floor floor : floors.values()) {
             floor.resetSeen(value);
