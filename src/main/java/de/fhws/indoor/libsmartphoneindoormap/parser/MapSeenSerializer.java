@@ -33,7 +33,7 @@ public class MapSeenSerializer {
 
     public MapSeenSerializer(Context applicationContext) {
         ctx = applicationContext;
-        safeFileUri = Uri.fromFile(new File(applicationContext.getExternalFilesDir(null), SAFE_FILE));
+        safeFileUri = Uri.fromFile(new File(applicationContext.getFilesDir(), SAFE_FILE));
     }
 
     public void saveSeenStateBeacon(String identifier) {

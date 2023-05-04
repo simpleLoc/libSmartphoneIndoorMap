@@ -159,7 +159,9 @@ public class XMLMapParser {
                                 attributes.getValue("name"),
                                 attributes.getValue("deviceId"),
                                 uwbBleMac,
-                                parsePosition(attributes));
+                                parsePosition(attributes),
+                                currentFloor.getAtHeight()
+                        );
                         break;
 
                     case "beacon":

@@ -2,7 +2,9 @@ package de.fhws.indoor.libsmartphoneindoormap.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import de.fhws.indoor.libsmartphoneindoormap.parser.MapSeenSerializer;
 
@@ -141,5 +143,11 @@ public class Map {
 
     private void raiseChangedListeners() {
         changedListeners.forEach(ChangedListener::onChange);
+    }
+
+    public List<UWBAnchor> getUwbAnchors() {
+        return floors.values().stream()
+                .flatMap(floor -> floor.getUwbAnchors().values().stream())
+                .collect(Collectors.toList());
     }
 }
