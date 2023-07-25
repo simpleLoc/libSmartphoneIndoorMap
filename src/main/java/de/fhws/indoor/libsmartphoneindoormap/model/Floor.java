@@ -4,15 +4,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Floor {
+    private int idx;
+    private String name;
+
     private float atHeight;
     private float height;
-    private String name;
 
     private final ArrayList<Wall> walls = new ArrayList<>();
     private final HashMap<MacAddress, AccessPoint> accessPoints = new HashMap<>();
     private final HashMap<String, UWBAnchor> uwbAnchors = new HashMap<>();
     private final HashMap<MacAddress, Beacon> beacons = new HashMap<>();
     private final HashMap<String, Fingerprint> fingerprints = new HashMap<>();
+
+
+    public int getIdx() {
+        return idx;
+    }
+
+    public void setIdx(int idx) {
+        this.idx = idx;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public float getAtHeight() {
         return atHeight;
@@ -28,14 +47,6 @@ public class Floor {
 
     public void setHeight(float height) {
         this.height = height;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public ArrayList<Wall> getWalls() {

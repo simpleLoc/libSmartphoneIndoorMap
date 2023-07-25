@@ -14,7 +14,7 @@ public class Map {
     }
 
     private final ArrayList<ChangedListener> changedListeners = new ArrayList<>();
-    private final HashMap<String, Floor> floors = new HashMap<>();
+    private final ArrayList<Floor> floors = new ArrayList<>();
     private MapSeenSerializer serializer = null;
 
     public void addChangedListener(ChangedListener listener) {
@@ -25,17 +25,17 @@ public class Map {
         changedListeners.remove(listener);
     }
 
-    public HashMap<String, Floor> getFloors() {
+    public ArrayList<Floor> getFloors() {
         return floors;
     }
 
     public void addFloor(Floor floor) {
-        floors.put(floor.getName(), floor);
+        floors.add(floor);
     }
 
     public HashMap<MacAddress, Beacon> getBeacons() {
         HashMap<MacAddress, Beacon> out = new HashMap<>();
-        for (Floor f : floors.values()) {
+        for (Floor f : floors) {
             out.putAll(f.getBeacons());
         }
         return out;
@@ -43,14 +43,14 @@ public class Map {
 
     public HashMap<MacAddress, AccessPoint> getAccessPoints() {
         HashMap<MacAddress, AccessPoint> out = new HashMap<>();
-        for (Floor f : floors.values()) {
+        for (Floor f : floors) {
             out.putAll(f.getAccessPoints());
         }
         return out;
     }
 
     public void resetSeen(boolean value) {
-        for (Floor floor : floors.values()) {
+        for (Floor floor : floors) {
             floor.resetSeen(value);
         }
         serializer.clearSeenStates();
@@ -68,7 +68,7 @@ public class Map {
 
     public void setSeenBeacon(String macStr, boolean save) {
         MacAddress mac = new MacAddress(macStr);
-        Optional<Beacon> beacon = floors.values().stream()
+        Optional<Beacon> beacon = floors.stream()
                 .flatMap(floor -> floor.getBeacons().values().stream())
                 .filter(b -> b.mac.equals(mac)).findFirst();
         beacon.ifPresent(b -> {
@@ -88,7 +88,7 @@ public class Map {
     }
 
     public void setSeenUWB(String shortDeviceId, boolean save) {
-        Optional<UWBAnchor> anchor = floors.values().stream()
+        Optional<UWBAnchor> anchor = floors.stream()
                 .flatMap(floor -> floor.getUwbAnchors().values().stream())
                 .filter(a -> a.shortDeviceId.equalsIgnoreCase(shortDeviceId)).findFirst();
         anchor.ifPresent(a -> {
@@ -108,7 +108,7 @@ public class Map {
 
     public void setSeenWiFi(String macStr, boolean save) {
         MacAddress mac = new MacAddress(macStr);
-        Optional<AccessPoint> ap = floors.values().stream()
+        Optional<AccessPoint> ap = floors.stream()
                 .flatMap(floor -> floor.getAccessPoints().values().stream())
                 .filter(a -> a.mac.equals(mac)).findFirst();
         ap.ifPresent(a -> {
@@ -127,7 +127,7 @@ public class Map {
 
     public void setSeenFtm(String macStr, boolean save) {
         MacAddress mac = new MacAddress(macStr);
-        Optional<AccessPoint> ap = floors.values().stream()
+        Optional<AccessPoint> ap = floors.stream()
                 .flatMap(floor -> floor.getAccessPoints().values().stream())
                 .filter(a -> a.mac.equals(mac)).findFirst();
         ap.ifPresent(a -> {
@@ -146,7 +146,7 @@ public class Map {
     }
 
     public List<UWBAnchor> getUwbAnchors() {
-        return floors.values().stream()
+        return floors.stream()
                 .flatMap(floor -> floor.getUwbAnchors().values().stream())
                 .collect(Collectors.toList());
     }

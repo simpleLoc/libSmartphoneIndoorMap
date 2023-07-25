@@ -22,4 +22,14 @@ public class Vec3 {
     public String toString() {
         return String.format(Locale.US,"%.3f %.3f %.3f", x, y, z);
     }
+
+    public static Vec3 parseVec3(String value) {
+        String[] floatStrings = value.split(" ");
+        if (floatStrings.length != 3) { return null; }
+
+        return new Vec3(
+                Float.parseFloat(floatStrings[0]),
+                Float.parseFloat(floatStrings[1]),
+                Float.parseFloat(floatStrings[2]));
+    }
 }

@@ -73,6 +73,7 @@ public class XMLMapParser {
 
         private Map map = null;
         private Floor currentFloor = null;
+        private int currentFloorIdx = 0;
         private Wall currentWall = null;
         private AccessPoint currentAP = null;
         private UWBAnchor currentUWB = null;
@@ -123,6 +124,7 @@ public class XMLMapParser {
                     case "floor":
                         assert currentFloor == null;
                         currentFloor = new Floor();
+                        currentFloor.setIdx(currentFloorIdx++);
                         currentFloor.setAtHeight(parseFloat(attributes, "atHeight"));
                         currentFloor.setHeight(parseFloat(attributes, "height"));
                         currentFloor.setName(attributes.getValue("name"));
@@ -178,12 +180,12 @@ public class XMLMapParser {
 
                     case "location":
                         assert currentFingerprintPosition == null;
-                        currentFingerprintPosition = new FingerprintPosition();
-                        currentFingerprintPosition.name = attributes.getValue("name");
-                        currentFingerprintPosition.position = new Vec3();
-                        currentFingerprintPosition.position.x = parseFloat(attributes, "x");
-                        currentFingerprintPosition.position.y = parseFloat(attributes, "y");
-                        currentFingerprintPosition.position.z = currentFloor.getAtHeight() + parseFloat(attributes, "dz");
+                        String name = attributes.getValue("name");
+                        Vec3 position = new Vec3();
+                        position.x = parseFloat(attributes, "x");
+                        position.y = parseFloat(attributes, "y");
+                        position.z = currentFloor.getAtHeight() + parseFloat(attributes, "dz");
+                        currentFingerprintPosition = new FingerprintPosition(name, currentFloor.getIdx(), currentFloor.getName(), false, false, position);
                         break;
 
                     default:

@@ -7,6 +7,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -54,10 +55,12 @@ public class MapView extends View {
     private Floor floor = null;
     private ViewConfig viewConfig = new ViewConfig();
 
-    private static final long mLongPressDuration = 2000;   // in ms
+    private static final long mLongPressDuration = 1000;   // in ms
     private static final float mMaxPressMoveDistance = 10; // in pixel
     private Vec2 mTouchDownScreenPos = new Vec2();
     private ArrayList<IMapEventListener> eventListeners = new ArrayList<>();
+
+    private Fingerprint highlightFingerprint = null;
 
 
     public static class ViewConfig {
@@ -142,26 +145,37 @@ public class MapView extends View {
         invalidate();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     public void setMap(Map map) {
         this.map = map;
         if (this.map == null) { return; }
 
         this.map.addChangedListener(this::invalidate);
 
-        Optional<Floor> first = map.getFloors().values().stream().findFirst();
+        Optional<Floor> first = map.getFloors().stream().findFirst();
         floor = first.orElse(null);
         invalidate();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
-    public void selectFloor(String name) {
+    public void selectFloor(int idx) {
         if (map == null) { return; }
-        floor = map.getFloors().getOrDefault(name, floor);
-        invalidate();
+        try {
+            floor = map.getFloors().get(idx);
+            invalidate();
+        } catch (IndexOutOfBoundsException exception) {
+            Log.e("MapView", exception.toString());
+            exception.printStackTrace();
+            // floor index not available
+        }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+    public Floor getCurrentFloor() {
+        return floor;
+    }
+
+    public void setHighlightFingerprint(Fingerprint fingerprint) {
+        this.highlightFingerprint = fingerprint;
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         if(initialized) {
@@ -188,6 +202,9 @@ public class MapView extends View {
 
             if(viewConfig.showFingerprint) {
                 floor.getFingerprints().values().forEach(fingerprint -> drawFP(fingerprint, canvas));
+                if (highlightFingerprint != null) {
+                    drawFP(highlightFingerprint, canvas);
+                }
             }
         }
     }
