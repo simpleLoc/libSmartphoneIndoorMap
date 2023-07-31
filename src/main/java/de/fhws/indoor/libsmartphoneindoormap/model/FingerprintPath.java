@@ -15,19 +15,7 @@ public class FingerprintPath extends Fingerprint {
             positions.add(point.position);
         }
 
-        name = fingerprintNamesToString(fingerprintNames);
-    }
-
-    public static String fingerprintNamesToString(ArrayList<String> fingerprintNames) {
-        StringBuilder concatNames = new StringBuilder("[");
-        for (String name : fingerprintNames) {
-            concatNames.append(String.format(Locale.US, "\"%s\", ", name));
-        }
-        // delete last comma and insert closing bracket
-        concatNames.delete(concatNames.length() - 2, concatNames.length());
-        concatNames.append("]");
-
-        return concatNames.toString();
+        name = String.join(";", fingerprintNames);
     }
 
     public static String positionsToString(ArrayList<Vec3> positions) {
