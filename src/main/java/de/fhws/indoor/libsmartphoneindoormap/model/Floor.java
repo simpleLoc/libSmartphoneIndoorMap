@@ -10,7 +10,9 @@ public class Floor {
     private float atHeight;
     private float height;
 
+    private Outline outline = null;
     private final ArrayList<Wall> walls = new ArrayList<>();
+    private final ArrayList<Stair> stairs = new ArrayList<>();
     private final HashMap<MacAddress, AccessPoint> accessPoints = new HashMap<>();
     private final HashMap<String, UWBAnchor> uwbAnchors = new HashMap<>();
     private final HashMap<MacAddress, Beacon> beacons = new HashMap<>();
@@ -53,8 +55,19 @@ public class Floor {
         return walls;
     }
 
+    public ArrayList<Stair> getStairs() { return stairs; }
+
+    public void setOutline(Outline outline) {
+        this.outline = outline;
+    }
+    public Outline getOutline() { return outline; }
+
     public void addWall(Wall w) {
         walls.add(w);
+    }
+
+    public void addStair(Stair s)  {
+        stairs.add(s);
     }
 
     public HashMap<MacAddress, AccessPoint> getAccessPoints() {

@@ -2,6 +2,7 @@ package de.fhws.indoor.libsmartphoneindoormap.parser;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.hardware.camera2.CameraExtensionSession;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
@@ -18,12 +19,15 @@ import javax.xml.parsers.SAXParserFactory;
 
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
+import de.fhws.indoor.libsmartphoneindoormap.model.BuildMaterial;
 import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
 import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPosition;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.MacAddress;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
+import de.fhws.indoor.libsmartphoneindoormap.model.Outline;
 import de.fhws.indoor.libsmartphoneindoormap.model.RadioModel;
+import de.fhws.indoor.libsmartphoneindoormap.model.Stair;
 import de.fhws.indoor.libsmartphoneindoormap.model.UWBAnchor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Vec3;
 import de.fhws.indoor.libsmartphoneindoormap.model.Wall;
@@ -74,6 +78,8 @@ public class XMLMapParser {
         private Map map = null;
         private Floor currentFloor = null;
         private int currentFloorIdx = 0;
+        private Outline.Polygon currentOutlinePolygon = null;
+        private Stair currentStair = null;
         private Wall currentWall = null;
         private AccessPoint currentAP = null;
         private UWBAnchor currentUWB = null;
@@ -130,6 +136,26 @@ public class XMLMapParser {
                         currentFloor.setName(attributes.getValue("name"));
                         break;
 
+                    case "outline":
+                        assert currentFloor.getOutline() == null;
+                        currentFloor.setOutline(new Outline());
+                        break;
+
+                    case "polygon":
+                        assert currentFloor.getOutline() != null;
+                        assert currentOutlinePolygon == null;
+                        currentOutlinePolygon = new Outline.Polygon();
+                        currentOutlinePolygon.method = Outline.PolygonMethod.parse(parseLong(attributes, "method", 0));
+                        break;
+
+                    case "point":
+                        if(currentOutlinePolygon != null) {
+                            float x = parseFloat(attributes, "x");
+                            float y = parseFloat(attributes, "y");
+                            currentOutlinePolygon.addPoint(x, y, currentFloor.getAtHeight());
+                        }
+                        break;
+
                     case "wall":
                     case "line":
                         assert currentWall == null;
@@ -139,6 +165,38 @@ public class XMLMapParser {
                         currentWall.p1.x = parseFloat(attributes, "x2");
                         currentWall.p1.y = parseFloat(attributes, "y2");
                         currentWall.thickness = parseFloat(attributes, "thickness");
+                        currentWall.material = BuildMaterial.parse(parseLong(attributes, "material", 0));
+                        break;
+
+                    case "door":
+                        assert currentWall != null;
+                        Wall.Door door = new Wall.Door();
+                        door.x01 = parseFloat(attributes, "x01");
+                        door.width = parseFloat(attributes, "width");
+                        door.height = parseFloat(attributes, "height");
+                        door.insideOut = parseBoolean(attributes, "io", false);
+                        door.leftRight = parseBoolean(attributes, "lr", false);
+                        door.lockType = Wall.DoorLockType.parse(parseLong(attributes, "lock", 3));
+                        currentWall.addDoor(door);
+                        break;
+
+                    case "stair":
+                        assert currentStair == null;
+                        currentStair = new Stair();
+                        break;
+                    case "part":
+                        if(currentStair != null) {
+                            Stair.StairPart part = new Stair.StairPart();
+                            part.connect = parseBoolean(attributes, "connect", false);
+                            part.p0.x = parseFloat(attributes, "x1");
+                            part.p0.y = parseFloat(attributes, "y1");
+                            part.p0.z = parseFloat(attributes, "z1");
+                            part.p1.x = parseFloat(attributes, "x2");
+                            part.p1.y = parseFloat(attributes, "y2");
+                            part.p1.z = parseFloat(attributes, "z2");
+                            part.w = parseFloat(attributes, "w");
+                            currentStair.parts.add(part);
+                        }
                         break;
 
                     case "accesspoint":
@@ -210,12 +268,25 @@ public class XMLMapParser {
                     currentFloor = null;
                     break;
 
+                case "polygon":
+                    assert currentOutlinePolygon != null;
+                    currentFloor.getOutline().addPolygon(currentOutlinePolygon);
+                    currentOutlinePolygon = null;
+                    break;
+
                 case "wall":
                 case "line":
                     assert currentFloor != null;
                     assert currentWall != null;
                     currentFloor.addWall(currentWall);
                     currentWall = null;
+                    break;
+
+                case "stair":
+                    assert currentFloor != null;
+                    assert currentStair != null;
+                    currentFloor.addStair(currentStair);
+                    currentStair = null;
                     break;
 
                 case "accesspoint":
@@ -266,6 +337,12 @@ public class XMLMapParser {
             } catch (NumberFormatException e) {
                 return Float.NaN;
             }
+        }
+
+        public long parseLong(Attributes attributes, final String name, final long defaultValue) {
+            String value = attributes.getValue(name);
+            if(value == null) { return defaultValue; }
+            return Long.parseLong(value);
         }
 
         public boolean parseBoolean(Attributes attributes, final String name, final boolean defaultValue) {

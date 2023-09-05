@@ -10,27 +10,43 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inspector.StaticInspectionCompanionProvider;
 
 import androidx.annotation.RequiresApi;
 
+import java.lang.invoke.ConstantCallSite;
+import java.time.temporal.ValueRange;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.Queue;
 
+import de.fhws.indoor.libsmartphoneindoormap.R;
 import de.fhws.indoor.libsmartphoneindoormap.model.AccessPoint;
 import de.fhws.indoor.libsmartphoneindoormap.model.Beacon;
+import de.fhws.indoor.libsmartphoneindoormap.model.BuildMaterial;
 import de.fhws.indoor.libsmartphoneindoormap.model.Fingerprint;
 import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPath;
 import de.fhws.indoor.libsmartphoneindoormap.model.FingerprintPosition;
 import de.fhws.indoor.libsmartphoneindoormap.model.Floor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Map;
+import de.fhws.indoor.libsmartphoneindoormap.model.Outline;
+import de.fhws.indoor.libsmartphoneindoormap.model.Stair;
 import de.fhws.indoor.libsmartphoneindoormap.model.UWBAnchor;
 import de.fhws.indoor.libsmartphoneindoormap.model.Vec2;
+import de.fhws.indoor.libsmartphoneindoormap.model.Vec3;
 import de.fhws.indoor.libsmartphoneindoormap.model.Wall;
 
 public class MapView extends View {
     // ColorScheme
     private boolean initialized = false;
-    private Paint wallPaint;
+    private Paint outlinePaint;
+    private Paint outlineRemovePaint;
+    private Paint stairPaint;
+    private Paint wallPaintOther;
+    private Paint wallPaintConcrete;
+    private Paint wallPaintWood;
+    private Paint doorPaint;
+    private Paint doorLockedPaint;
     private Paint unseenPaint;
     private Paint seenPaint;
     private Paint selectedPaint;
@@ -126,8 +142,24 @@ public class MapView extends View {
     }
 
     public void setColorScheme(ColorScheme colorScheme) {
-        wallPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        wallPaint.setColor(getResources().getColor(colorScheme.wallColor, getContext().getTheme()));
+        outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        outlinePaint.setColor(getResources().getColor(colorScheme.outlineColor, getContext().getTheme()));
+        outlineRemovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        outlineRemovePaint.setColor(getResources().getColor(colorScheme.outlineRemoveColor, getContext().getTheme()));
+
+        stairPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        stairPaint.setColor(getResources().getColor(colorScheme.stairColor, getContext().getTheme()));
+
+        wallPaintOther = new Paint(Paint.ANTI_ALIAS_FLAG);
+        wallPaintConcrete = new Paint(Paint.ANTI_ALIAS_FLAG);
+        wallPaintWood = new Paint(Paint.ANTI_ALIAS_FLAG);
+        wallPaintOther.setColor(getResources().getColor(colorScheme.wallColor, getContext().getTheme()));
+        wallPaintConcrete.setColor(getResources().getColor(colorScheme.wallColorConcrete, getContext().getTheme()));
+        wallPaintWood.setColor(getResources().getColor(colorScheme.wallColorWood, getContext().getTheme()));
+        doorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        doorPaint.setColor(getResources().getColor(colorScheme.doorColor, getContext().getTheme()));
+        doorLockedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        doorLockedPaint.setColor(getResources().getColor(colorScheme.doorColorLocked, getContext().getTheme()));
 
         unseenPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         unseenPaint.setColor(getResources().getColor(colorScheme.unseenColor, getContext().getTheme()));
@@ -189,7 +221,10 @@ public class MapView extends View {
 
             if (map == null || floor == null) { return; }
 
+            drawOutline(floor, canvas);
+
             floor.getWalls().forEach(wall -> drawWall(wall, canvas));
+            floor.getStairs().forEach(stair -> drawStair(stair, canvas));
             if(viewConfig.showBluetooth) {
                 floor.getBeacons().values().forEach(beacon -> drawBeacon(beacon, canvas));
             }
@@ -216,28 +251,116 @@ public class MapView extends View {
         mMVMatrix.invert(mMVMatrixInverse);
     }
 
+    private void drawStair(Stair stair, Canvas canvas) {
+        for(Stair.StairPart stairPart : stair.parts) {
+            stairPaint.setStrokeWidth(stairPart.w);
+            canvas.drawLine(stairPart.p0.x, stairPart.p0.y, stairPart.p1.x, stairPart.p1.y, stairPaint);
+        }
+    }
+
+    private void drawOutline(Floor floor, Canvas canvas) {
+        for(Outline.Polygon outlinePolygon : floor.getOutline().getPolygons()) {
+            if(outlinePolygon.method == Outline.PolygonMethod.ADD) {
+                Path outlinePath = new Path();
+                outlinePath.reset();
+                for(int i = 0; i < outlinePolygon.points.size(); ++i) {
+                    Vec3 pt = outlinePolygon.points.get(i);
+                    if(i == 0) {
+                        outlinePath.moveTo(pt.x, pt.y);
+                    } else {
+                        outlinePath.lineTo(pt.x, pt.y);
+                    }
+                }
+                canvas.drawPath(outlinePath, outlinePaint);
+            }
+        }
+        for(Outline.Polygon outlinePolygon : floor.getOutline().getPolygons()) {
+            if(outlinePolygon.method == Outline.PolygonMethod.REMOVE) {
+                Path outlinePath = new Path();
+                outlinePath.reset();
+                for(int i = 0; i < outlinePolygon.points.size(); ++i) {
+                    Vec3 pt = outlinePolygon.points.get(i);
+                    if(i == 0) {
+                        outlinePath.moveTo(pt.x, pt.y);
+                    } else {
+                        outlinePath.lineTo(pt.x, pt.y);
+                    }
+                }
+                canvas.drawPath(outlinePath, outlineRemovePaint);
+            }
+        }
+    }
+
     private void drawWall(Wall wall, Canvas canvas) {
-        Vec2 p0p1 = wall.p1.sub(wall.p0);
-        Vec2 halfWidth = p0p1.normalized().getPerpendicular().mul(wall.thickness/2);
-        Vec2 fullWidth = halfWidth.mul(2);
+        class DrawSegment {
+            float start;
+            float end;
+            Wall.Door door;
+            Paint paint;
 
-        Vec2 p0 = wall.p0.add(halfWidth);
-        Vec2 p1 = p0.sub(fullWidth);
-        Vec2 p2 = p1.add(p0p1);
-        Vec2 p3 = p2.add(fullWidth);
+            public DrawSegment(float start, float end, Wall.Door door, Paint paint) {
+                this.start = start;
+                this.end = end;
+                this.door = door;
+                this.paint = paint;
+            }
+            public boolean contains(DrawSegment other) {
+                return (start <= other.start && end >= other.end);
+            }
+        }
+        class DrawSegments {
+            final ArrayList<DrawSegment> segments = new ArrayList<>();
+            public void add(DrawSegment newSegment) {
+                DrawSegment intersectSegment = segments.stream().filter(seg -> seg.contains(newSegment)).findAny().orElse(null);
+                if(intersectSegment != null) {
+                    segments.remove(intersectSegment);
+                    segments.add(new DrawSegment(intersectSegment.start, newSegment.start, intersectSegment.door, intersectSegment.paint));
+                    segments.add(newSegment);
+                    segments.add(new DrawSegment(newSegment.end, intersectSegment.end, intersectSegment.door, intersectSegment.paint));
+                } else {
+                    segments.add(newSegment);
+                }
+            }
+            public void sort() {
+                segments.sort((a, b) -> Float.compare(a.start, b.start));
+            }
+        }
 
-        float[] pts = {
-                p0.x, p0.y,
-                p1.x, p1.y,
-                p1.x, p1.y,
-                p2.x, p2.y,
-                p2.x, p2.y,
-                p3.x, p3.y,
-                p3.x, p3.y,
-                p0.x, p0.y
-        };
-        //canvas.drawLines(pts, wallPaint);
-        canvas.drawRect(p0.x, p0.y, p2.x, p2.y, wallPaint);
+        Paint wallPaint = null;
+        if(wall.material == BuildMaterial.CONCRETE) { wallPaint = wallPaintConcrete; }
+        else if(wall.material == BuildMaterial.WOOD) { wallPaint = wallPaintWood; }
+        else { wallPaint = wallPaintOther; }
+        wallPaint.setStrokeWidth(wall.thickness);
+
+        Vec2 wallDir = wall.p1.sub(wall.p0);
+        float wallLen = (float)wallDir.length();
+        DrawSegments drawSegments = new DrawSegments();
+        drawSegments.add(new DrawSegment(0, 1, null, wallPaint));
+        for(Wall.Door door : wall.doors) {
+            float widthAlpha = door.width / wallLen;
+            Paint drawPaint = (door.lockType == Wall.DoorLockType.OPEN) ? doorPaint : doorLockedPaint;
+            if(door.leftRight == false) {
+                drawSegments.add(new DrawSegment(door.x01, door.x01 + widthAlpha, door, drawPaint));
+            } else {
+                drawSegments.add(new DrawSegment(door.x01 - widthAlpha, door.x01, door, drawPaint));
+            }
+        }
+        drawSegments.sort();
+
+        for(DrawSegment segment : drawSegments.segments) {
+            Vec2 startPt = wall.p0.add(wallDir.mul(segment.start));
+            Vec2 endPt = wall.p0.add(wallDir.mul(segment.end));
+            canvas.drawLine(startPt.x, startPt.y, endPt.x, endPt.y, segment.paint);
+            if(segment.door != null) {
+                Vec2 doorPerpDir = endPt.sub(startPt).getPerpendicular();
+                if(segment.door.insideOut) { doorPerpDir = doorPerpDir.mul(-1); }
+                if(segment.door.leftRight) {
+                    Vec2 tmp = endPt; endPt = startPt; startPt = tmp;
+                }
+                canvas.drawLine(startPt.x, startPt.y, startPt.x + doorPerpDir.x, startPt.y + doorPerpDir.y, segment.paint);
+                canvas.drawLine(startPt.x + doorPerpDir.x, startPt.y + doorPerpDir.y, endPt.x, endPt.y, segment.paint);
+            }
+        }
     }
 
     private void drawBeacon(Beacon beacon, Canvas canvas) {
