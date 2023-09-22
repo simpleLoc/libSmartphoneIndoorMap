@@ -237,6 +237,13 @@ public class MapView extends View {
 
             if(viewConfig.showFingerprint) {
                 floor.getFingerprints().values().forEach(fingerprint -> drawFP(fingerprint, canvas));
+                map.getFloors().forEach(f -> {
+                    f.getFingerprints().values().forEach(fp -> {
+                        if (fp instanceof FingerprintPath) {
+                            drawFPPath((FingerprintPath) fp, canvas);
+                        }
+                    });
+                });
                 if (highlightFingerprint != null) {
                     drawFP(highlightFingerprint, canvas);
                 }

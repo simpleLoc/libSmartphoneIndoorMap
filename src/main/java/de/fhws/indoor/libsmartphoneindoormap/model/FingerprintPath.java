@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class FingerprintPath extends Fingerprint {
+    public ArrayList<Integer> floorIdxs = new ArrayList<Integer>();
+    public  ArrayList<String> floorNames = new ArrayList<String>();
     public ArrayList<String> fingerprintNames = new ArrayList<>();
     public ArrayList<Vec3> positions = new ArrayList<>();
 
-    public FingerprintPath(int floorIdx, String floorName, boolean selected, boolean recorded, ArrayList<FingerprintPosition> fingerprints) {
-        super("", floorIdx, floorName, selected, recorded);
+    public FingerprintPath(boolean selected, boolean recorded, ArrayList<FingerprintPosition> fingerprints) {
+        super("", selected, recorded);
 
         for (FingerprintPosition point : fingerprints) {
+            floorIdxs.add(point.floorIdx);
+            floorNames.add(point.floorName);
             fingerprintNames.add(point.name);
             positions.add(point.position);
         }
